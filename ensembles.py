@@ -1,7 +1,9 @@
 import numpy as np
 from numpy.random import shuffle
 from scipy.optimize import minimize_scalar
+import sklearn
 from sklearn.tree import DecisionTreeRegressor
+from sklearn import datasets
 
 
 class RandomForestMSE:
@@ -68,7 +70,7 @@ class RandomForestMSE:
 
 class GradientBoostingMSE:
     def __init__(
-        self, n_estimators, learning_rate=0.1, max_depth=5, feature_subsample_size=None,
+        self, n_estimators, learning_rate=0.1, max_depth=4, feature_subsample_size=None,
         **trees_parameters
     ):
         """
@@ -81,6 +83,12 @@ class GradientBoostingMSE:
         feature_subsample_size : float
             The size of feature set for each tree. If None then use one-third of all features.
         """
+        self.estimators: list[DecisionTreeRegressor] = []
+        self.alpha: list[int] = []
+        self.feature_subsample_size = feature_subsample_size
+        for i in range(n_estimators):
+            tree = DecisionTreeRegressor(max_depth=max_depth, criterion='squared_error', *trees_parameters)
+            self.estimators.append(tree)
 
     def fit(self, X, y, X_val=None, y_val=None):
         """
@@ -89,6 +97,21 @@ class GradientBoostingMSE:
         y : numpy ndarray
             Array of size n_objects
         """
+        s, q = X.shape
+        if self.feature_subsample_size is None:
+            max_features = int(q / 3)
+        else:
+            max_features = self.feature_subsample_size
+        seq: np.ndarray = np.arange(q).astype('int')
+        self.list_indexes = []
+        
+        f = np.zeros((s))
+        for estimator in self.estimators:
+            shuffle(seq)
+            indexes: np.ndarray = seq[:max_features]
+            self.list_indexes.append(indexes.copy())
+            estimator.fit(X[:, indexes], y - f)
+            f += estimator.predict(X[:, indexes])
 
     def predict(self, X):
         """
@@ -99,3 +122,11 @@ class GradientBoostingMSE:
         y : numpy ndarray
             Array of size n_objects
         """
+        s, q = X.shape
+        ans = np.zeros((s))
+        
+        for est, ind in zip(self.estimators, self.list_indexes):
+            ans += est.predict(X[:, ind])
+            
+        return ans
+    
