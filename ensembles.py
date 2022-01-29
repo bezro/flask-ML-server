@@ -66,31 +66,30 @@ class RandomForestMSE:
             y += estimator.predict(X[:, index])
             
         return y / len(self.estimators)
+
             
 
 class GradientBoostingMSE:
     def __init__(
-        self, n_estimators, learning_rate=0.1, max_depth=4, feature_subsample_size=None,
-        **trees_parameters
+        self, n_estimators=100, learning_rate=0.1, max_depth=4, feature_subsample_size=None
     ):
         """
         n_estimators : int
             The number of trees in the forest.
         learning_rate : float
+            //Unused
             Use alpha * learning_rate instead of alpha
         max_depth : int
             The maximum depth of the tree. If None then there is no limits.
         feature_subsample_size : float
             The size of feature set for each tree. If None then use one-third of all features.
         """
-        self.estimators: list[DecisionTreeRegressor] = []
-        self.alpha: list[int] = []
+        self.n_estimators: int = n_estimators
+        self.learning_rate: float = learning_rate
+        self.max_depth: int = max_depth
         self.feature_subsample_size = feature_subsample_size
-        for i in range(n_estimators):
-            tree = DecisionTreeRegressor(max_depth=max_depth, criterion='squared_error', *trees_parameters)
-            self.estimators.append(tree)
 
-    def fit(self, X, y, X_val=None, y_val=None):
+    def fit(self, X: np.ndarray, y: np.ndarray, X_val=None, y_val=None):
         """
         X : numpy ndarray
             Array of size n_objects, n_features
@@ -98,6 +97,12 @@ class GradientBoostingMSE:
             Array of size n_objects
         """
         s, q = X.shape
+        self.estimators: list[DecisionTreeRegressor] = []
+        self.alpha: list[int] = []
+        for i in range(self.n_estimators):
+            tree = DecisionTreeRegressor(
+                max_depth=self.max_depth, criterion='squared_error')
+            self.estimators.append(tree)
         if self.feature_subsample_size is None:
             max_features = int(q / 3)
         else:
@@ -113,7 +118,7 @@ class GradientBoostingMSE:
             estimator.fit(X[:, indexes], y - f)
             f += estimator.predict(X[:, indexes])
 
-    def predict(self, X):
+    def predict(self, X: np.ndarray):
         """
         X : numpy ndarray
             Array of size n_objects, n_features
@@ -129,5 +134,19 @@ class GradientBoostingMSE:
             ans += est.predict(X[:, ind])
             
         return ans
+    
+    def get_params(self, deep=False):
+        return {
+            'n_estimators': self.n_estimators,
+            'learning_rate': self.learning_rate,
+            'max_depth': self.max_depth,
+            'feature_subsample_size': self.feature_subsample_size
+        }
+        
+    def set_params(self, **parameters):
+        for parameter, value in parameters.items():
+            setattr(self, parameter, value)
+        return self
+        
     
     
