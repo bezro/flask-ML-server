@@ -8,7 +8,7 @@ from sklearn import datasets
 
 class RandomForestMSE:
     def __init__(
-        self, n_estimators: int, max_depth=None, feature_subsample_size=None,
+        self, n_estimators=10, max_depth=None, feature_subsample_size=None,
         **trees_parameters
     ):
         """
@@ -20,11 +20,10 @@ class RandomForestMSE:
             The size of feature set for each tree. If None then use one-third of all features.
         """
 
-        self.estimators: list[DecisionTreeRegressor] = []
+        self.n_estimators = n_estimators
+        self.max_depth = max_depth
         self.feature_subsample_size = feature_subsample_size
-        for i in range(n_estimators):
-            tree = DecisionTreeRegressor(max_depth=max_depth, criterion='squared_error', *trees_parameters)
-            self.estimators.append(tree)
+        self.trees_parameters = trees_parameters
 
     def fit(self, X: np.ndarray, y: np.ndarray, X_val=None, y_val=None):
         """
@@ -38,11 +37,20 @@ class RandomForestMSE:
             Array of size n_val_objects
         """
         
+
+        self.estimators: list[DecisionTreeRegressor] = []
         _, q = X.shape
         if self.feature_subsample_size is None:
             max_features = int(q / 3)
         else:
             max_features = self.feature_subsample_size
+        
+        for _ in range(self.n_estimators):
+            tree = DecisionTreeRegressor(
+                max_depth=self.max_depth, 
+                criterion='squared_error', 
+                *self.trees_parameters)
+            self.estimators.append(tree)
         seq: np.ndarray = np.arange(q).astype('int')
         self.list_indexes = []
         for estimator in self.estimators:
@@ -51,7 +59,7 @@ class RandomForestMSE:
             self.list_indexes.append(indexes.copy())
             estimator.fit(X[:, indexes], y)
 
-    def predict(self, X: np.ndarray):
+    def predict(self, X: np.ndarray) -> np.ndarray:
         """
         X : numpy ndarray
             Array of size n_objects, n_features
@@ -66,7 +74,18 @@ class RandomForestMSE:
             y += estimator.predict(X[:, index])
             
         return y / len(self.estimators)
-
+    
+    def get_params(self, deep=False):
+        return {
+            'n_estimators': self.n_estimators,
+            'max_depth': self.max_depth,
+            'feature_subsample_size': self.feature_subsample_size
+        }
+        
+    def set_params(self, **parameters):
+        for parameter, value in parameters.items():
+            setattr(self, parameter, value)
+        return self
             
 
 class GradientBoostingMSE:
@@ -99,7 +118,7 @@ class GradientBoostingMSE:
         s, q = X.shape
         self.estimators: list[DecisionTreeRegressor] = []
         self.alpha: list[int] = []
-        for i in range(self.n_estimators):
+        for _ in range(self.n_estimators):
             tree = DecisionTreeRegressor(
                 max_depth=self.max_depth, criterion='squared_error')
             self.estimators.append(tree)
