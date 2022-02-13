@@ -1,0 +1,31 @@
+{% import "bootstrap/wtf.html" as wtf %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Классификация новостей</title>
+</head>
+
+<body>
+    Введите текст новости, чтобы определить её тематику. Возможные темы: <br>
+    <ul>
+        <li>Экономика</li>
+        <li>Спорт</li>
+        <li>Из жизни</li>
+        <li>Интернет и СМИ</li>
+        <li>Культура</li>
+        <li>Дом</li>
+        <li>Бывший СССР</li>
+        <li>69-я параллель</li>
+        <li>Мир</li>
+        <li>Наука и техника</li>
+        <li>Путешествия</li>
+        <li>Россия</li>
+        <li>Нацпроекты</li>
+        <li>Силовые структуры</li>
+        <li>Ценности</li>
+    </ul> <br>
+    {{ wtf.quick_form(text_data) }}
+</body>
+</html>
